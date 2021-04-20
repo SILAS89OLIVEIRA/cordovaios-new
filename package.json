@@ -25,5 +25,7 @@
       "ios"
     ]
   },
-  "dependencies": {}
+  "dependencies": {
+    "cordova-ios": "6.1.0"
+  }
 }
