@@ -1,11 +1,11 @@
 workflows:
-  ionic-capacitor-ios-workflow:
-    name: Ionic Capacitor iOS Workflow
+  ionic-cordova-ios-workflow:
+    name: Ionic Cordova iOS Workflow
     max_build_duration: 120
     instance_type: mac_mini
     environment:
       vars:
-        # Ionic Capacitor Xcode worskspace and scheme
+        # Ionic Xcode worskspace and scheme
         XCODE_WORKSPACE: "platforms/ios/ThinkFornecedores.xcworkspace" # <- Update with your workspace name
         XCODE_SCHEME: "ThinkFornecedores" # <- Update with your workspace scheme
         # Manual Code Signing
@@ -31,16 +31,18 @@ workflows:
           include: true
           source: true
     scripts:
-      - name: Install npm dependencies for Ionic project
+      - name: Install npm dependencies for Ionic Cordova project and update to Cordova version 9
         script: |
-                    npm install
+          npm ci # equivalent of npm install for CI systems. Requires package-lock.json or npm-shrinkwrap.json to be present
+          cvm install 9.0.0
+          cvm use 9.0.0          
+      - name: Setup Cordova iOS platform
+        script: |
+            cordova platform remove ios
+            cordova platform add ios          
       - name: Cocoapods installation
         script: |
-                    cd ios/App && pod install
-      - name: Update dependencies and copy web assets to native project
-        script: |
-          # npx cap copy # <- use this is you don't need to update native dependencies
-          npx cap sync # <- update native dependencies and copy web assets to native project          
+                    cd platforms/ios && pod install
       - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
         script: |
                     keychain initialize
@@ -63,7 +65,7 @@ workflows:
           #!/bin/sh
           set -e
           set -x
-          cd $FCI_BUILD_DIR/ios/App
+          cd $FCI_BUILD_DIR/platforms/ios
           agvtool new-version -all $(($BUILD_NUMBER +1))          
       - name: Set up code signing settings on Xcode project
         script: |
@@ -72,10 +74,10 @@ workflows:
         script: |
                     xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
     artifacts:
-        - build/ios/ipa/*.ipa
-        - /tmp/xcodebuild_logs/*.log
-        - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-        - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
       app_store_connect:
         apple_id: silas.mrs@gmail.com # <- put your Apple Id here
